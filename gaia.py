@@ -27,23 +27,39 @@ def import_subscription_csv():
     new_file.close()
 
     csv = pd.read_table(csv_file_path, header=None, sep=",", names=list(range(40)))
-    print(csv)
     df = pd.DataFrame(columns=['Ret', 'Antal'])
-    print(df)
     for column in csv:
         if(column > 1):
             if (column % 2) == 0:
                 xtra = pd.DataFrame(data=csv.iloc[:, [column, column+1]])
                 xtra.columns = ['Ret', 'Antal']
-                print(xtra)
                 df = df.append(xtra, ignore_index= True)
             else:
                 print('Append 1')
     print(df)
     df = df.dropna()
     print(df)
-    print(df.sum(axis = 0, skipna = True))
-    print(df.groupby('Ret').sum())
+    # Eliminate invalid data from dataframe (see Example below for more context)
+
+    num_df = (df.drop(['Antal'], axis=1)
+         .join(df['Antal'].apply(pd.to_numeric, errors='coerce')))
+    print(num_df)
+    num_df = num_df.dropna()
+    num_df["Antal"] = pd.to_numeric(num_df["Antal"])
+    sales = num_df.groupby('Ret').sum()
+    print(sales)
+    sales = sales.reset_index()
+    print(sales)
+    for row in sales.itertuples():
+        print(row.Ret)
+        print(row.Antal)
+        try:
+            cell = worksheet.find(row.Ret)
+            print(cell)
+            time.sleep(1)
+            worksheet.update_cell(cell.row, cell.col+4, row.Antal)
+        except gspread.exceptions.CellNotFound:  # or except gspread.CellNotFound:
+            print('Not found')
 
 def import_sales_csv():
     sh = gc.open('Mad')
@@ -101,8 +117,8 @@ buttonCSV = Label(tab1, text='File Path').grid(row=1, column=0)
 v = StringVar()
 entry = Entry(tab1, textvariable=v).grid(row=2, column=1)
 Button(tab1, text='Browse Data Set',command=import_csv_data).grid(row=1, column=0, ipady=12, ipadx=12)
-Button(tab1, text='Importer Sales Report',command=import_sales_csv).grid(row=1, column=1)
-buttonSalesNumbers = Button(tab1, text="Tryk her for at se salgstal", command=import_product_sales).grid(row=2, column=0)
-buttonDelete = Button(tab1, text="Importer Abonnentstal", command=import_subscription_csv).grid(row=3, column=0)
+Button(tab1, text='Importer Sales Report',command=import_sales_csv).grid(row=1, column=1, ipady=12, ipadx=12)
+buttonSalesNumbers = Button(tab1, text="Tryk her for at se salgstal", command=import_product_sales).grid(row=2, column=0, ipady=12, ipadx=12)
+buttonDelete = Button(tab1, text="Importer Abonnentstal", command=import_subscription_csv).grid(row=3, column=0, ipady=12, ipadx=12)
 
 root.mainloop()

@@ -1,16 +1,22 @@
 from sshtunnel import SSHTunnelForwarder
+from config import Config
 import MySQLdb as mdb
 import pandas as pd
 
 server = SSHTunnelForwarder(
-    ('34.89.176.38', 15315),
-    ssh_username="gaiamadservice",
-    ssh_password="6jEaDYxw1p5oUnP",
-    remote_bind_address=('127.0.0.1', 3306))
+    (Config.DATABASE_CONFIG['ssh-server'], Config.DATABASE_CONFIG['ssh-port']),
+    ssh_username=Config.DATABASE_CONFIG['user'],
+    ssh_password=Config.DATABASE_CONFIG['ssh-password'],
+    remote_bind_address=(Config.DATABASE_CONFIG['server'], Config.DATABASE_CONFIG['port']))
 
 server.start()
 
-con = mdb.connect('127.0.0.1', "gaiamadservice", "oWCQ95skCuIA6CB", "gaiamadservice", port=server.local_bind_port)
+con = mdb.connect(
+            Config.DATABASE_CONFIG['server'],
+            Config.DATABASE_CONFIG['user'],
+            Config.DATABASE_CONFIG['password'],
+            Config.DATABASE_CONFIG['name'], 
+            port=server.local_bind_port)
 
 df = pd.read_sql("SELECT * FROM `wp_users` WHERE `user_email` LIKE '%gaiamadservice.dk%'", con)
 

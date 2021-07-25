@@ -36,26 +36,18 @@ def import_subscription_csv():
                 df = df.append(xtra, ignore_index= True)
             else:
                 print('Append 1')
-    print(df)
     df = df.dropna()
-    print(df)
     # Eliminate invalid data from dataframe (see Example below for more context)
 
     num_df = (df.drop(['Antal'], axis=1)
          .join(df['Antal'].apply(pd.to_numeric, errors='coerce')))
-    print(num_df)
     num_df = num_df.dropna()
     num_df["Antal"] = pd.to_numeric(num_df["Antal"])
     sales = num_df.groupby('Ret').sum()
-    print(sales)
     sales = sales.reset_index()
-    print(sales)
     for row in sales.itertuples():
-        print(row.Ret)
-        print(row.Antal)
         try:
             cell = worksheet.find(row.Ret)
-            print(cell)
             time.sleep(1)
             worksheet.update_cell(cell.row, cell.col+4, row.Antal)
         except gspread.exceptions.CellNotFound:  # or except gspread.CellNotFound:
@@ -76,7 +68,7 @@ def import_sales_csv():
         except gspread.exceptions.CellNotFound:  # or except gspread.CellNotFound:
             print('Not found')
 
-def import_product_sales():
+def get_product_sales():
     sh = gc.open('Mad')
     val = sh.values_get("Uge!A2:B76")
     rows = val.get('values', [])
@@ -85,15 +77,6 @@ def import_product_sales():
     for index, row in df.iterrows():
         Label(popup, text=row[0]).grid(row=index, column=0)
         Label(popup, text=row[1]).grid(row=index, column=1)
-
-def import_csv_data():
-    global v
-    csv_file_path = askopenfilename()
-    print(csv_file_path)
-    v.set(csv_file_path)
-    df = pd.read_csv(csv_file_path)
-    print(df)
-
 
 root = Tk()
 
@@ -112,13 +95,8 @@ tabControl.grid(row = 0, column=0)
 
 welcomeText = "Velkommen til Gaia's awesome backend software. Her kan du importere csv filer, og se salgstal."
 myLabel1 = Label(tab1, text=welcomeText).grid(row=0, columnspan="2", sticky="N")
-
-buttonCSV = Label(tab1, text='File Path').grid(row=1, column=0)
-v = StringVar()
-entry = Entry(tab1, textvariable=v).grid(row=2, column=1)
-Button(tab1, text='Browse Data Set',command=import_csv_data).grid(row=1, column=0, ipady=12, ipadx=12)
 Button(tab1, text='Importer Sales Report',command=import_sales_csv).grid(row=1, column=1, ipady=12, ipadx=12)
-buttonSalesNumbers = Button(tab1, text="Tryk her for at se salgstal", command=import_product_sales).grid(row=2, column=0, ipady=12, ipadx=12)
-buttonDelete = Button(tab1, text="Importer Abonnentstal", command=import_subscription_csv).grid(row=3, column=0, ipady=12, ipadx=12)
+buttonSalesNumbers = Button(tab1, text="Tryk her for at se salgstal", command=get_product_sales).grid(row=1, column=0, ipady=12, ipadx=12)
+buttonDelete = Button(tab1, text="Importer Abonnentstal", command=import_subscription_csv).grid(row=2, column=1, ipady=12, ipadx=12)
 
 root.mainloop()

@@ -1,24 +1,28 @@
 from sshtunnel import SSHTunnelForwarder
 from config import Config
 import MySQLdb as mdb
+import pandas as pd
 
 class Database:
 
-    def __init__(self, query):
-        server = SSHTunnelForwarder(
+    server = SSHTunnelForwarder(
         (Config.DATABASE_CONFIG['ssh-server'], Config.DATABASE_CONFIG['ssh-port']),
         ssh_username=Config.DATABASE_CONFIG['user'],
         ssh_password=Config.DATABASE_CONFIG['ssh-password'],
         remote_bind_address=(Config.DATABASE_CONFIG['server'], Config.DATABASE_CONFIG['port']))
 
-        server.start()
+    def __init__(self):
+        pass 
+
+    def insert(self, query):
+        self.server.start()
         try:
             con = mdb.connect(
             Config.DATABASE_CONFIG['server'],
             Config.DATABASE_CONFIG['user'],
             Config.DATABASE_CONFIG['password'],
             Config.DATABASE_CONFIG['name'], 
-            port=server.local_bind_port)
+            port=self.server.local_bind_port)
         except:
             print('Cant connect')
         print('Connected')
@@ -29,5 +33,25 @@ class Database:
         print(resp)
         con.commit()
         con.close()
-        server.stop()
+        self.server.stop()
+    
+    def dataframe(self, query):
+        self.server.start()
+        try:
+            con = mdb.connect(
+            Config.DATABASE_CONFIG['server'],
+            Config.DATABASE_CONFIG['user'],
+            Config.DATABASE_CONFIG['password'],
+            Config.DATABASE_CONFIG['name'], 
+            port=self.server.local_bind_port)
+        except:
+            print('Cant connect')
+        print('Connected')
+        print(query)
+        df = pd.read_sql(query, con)
+        print(df)
+        
+        con.close()
+        self.server.stop()
 
+        return df

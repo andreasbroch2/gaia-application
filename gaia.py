@@ -1,33 +1,59 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter.filedialog import askopenfilename
+
+from pandas.core.frame import DataFrame
 from ingredient import Ingredient
+from database import Database
 import numpy as np
 import pandas as pd
 import gspread
 import time
 
 gc = gspread.oauth()
+db = Database()
 
-def add_ingredient():
-    ingredientWindow = Tk()
+root = Tk()
+root.geometry('1920x1080')
+root.call('wm', 'iconphoto', root._w, PhotoImage(file='./assets/icon.png'))
+root.title("Gaia's Awesome Backend Software")
+root.state('zoomed')
+rootHeight = root.winfo_height()
+rootWidth = root.winfo_width()
+
+iName = StringVar()
+iPrice = StringVar()
+iKcal = StringVar()
+iFat = StringVar()
+iCarbs = StringVar()
+iProtein = StringVar()
+def ingredient_window():
+    global ingredientWindow
+    ingredientWindow = Toplevel(root)
     ingredientWindow.geometry('800x600')
     ingredientWindow.title("Tilføj ingrediens")
     Label(ingredientWindow, text='Navn').pack()
-    name = Entry(ingredientWindow).pack()
+    Entry(ingredientWindow, textvariable=iName).pack()
     Label(ingredientWindow, text='Pris').pack()
-    price = Entry(ingredientWindow).pack()
+    Entry(ingredientWindow, textvariable=iPrice).pack()
     Label(ingredientWindow, text='Kcal').pack()
-    kcal = Entry(ingredientWindow).pack()
+    Entry(ingredientWindow, textvariable=iKcal).pack()
     Label(ingredientWindow, text='Fedt').pack()
-    fat = Entry(ingredientWindow).pack()
+    Entry(ingredientWindow, textvariable=iFat).pack()
     Label(ingredientWindow, text='Kulhydrater').pack()
-    carbs = Entry(ingredientWindow).pack()
+    Entry(ingredientWindow, textvariable=iCarbs).pack()
     Label(ingredientWindow, text='Protein').pack()
-    protein = Entry(ingredientWindow).pack()
-    ingredient = Ingredient("Kartofler", 10, 99, 99, 99, 99)
-    print(ingredient.name)
-    ingredient.pushToDatabase()
+    Entry(ingredientWindow, textvariable=iProtein).pack()    
+    def add_ingredient():
+        ingredient = Ingredient(iName.get(), iPrice.get(), iKcal.get(), iFat.get(), iCarbs.get(), iProtein.get())
+        ingredient.pushToDatabase()
+        ingredientWindow.destroy()
+        ingredientData()
+    Button(ingredientWindow, text='Tilføj ingrediens', command=add_ingredient).pack()
+
+
+
+
 
 
 def import_subscription_csv():
@@ -104,10 +130,6 @@ def get_product_sales():
         Label(popup, text=row[1]).grid(row=index, column=1)
 
 
-root = Tk()
-root.geometry('')
-root.call('wm', 'iconphoto', root._w, PhotoImage(file='./assets/icon.png'))
-root.title("Gaia's Awesome Backend Software")
 
 canvas = Canvas(root)
 canvas.pack()
@@ -115,9 +137,9 @@ canvas.pack()
 notebook = ttk.Notebook(canvas)
 notebook.pack(pady=10, expand=True)
 
-tab1 = ttk.Frame(notebook, width=800, height=580)
-tab2 = ttk.Frame(notebook, width=800, height=580)
-tab3 = ttk.Frame(notebook, width=800, height=580)
+tab1 = ttk.Frame(notebook, width=rootWidth-20, height=rootHeight-20)
+tab2 = ttk.Frame(notebook, width=rootWidth-20, height=rootHeight-20)
+tab3 = ttk.Frame(notebook, width=rootWidth-20, height=rootHeight-20)
 
 tab1.pack(fill='both', expand=True)
 tab2.pack(fill='both', expand=True)
@@ -127,33 +149,46 @@ notebook.add(tab1, text='Dashboard')
 notebook.add(tab2, text='Ingredienser')
 notebook.add(tab3, text='Retter')
 
-    # Tab 1 - Dashboard
+# Tab 1 - Dashboard
 
 welcomeText = "Velkommen til Gaia's awesome backend software. Her kan du importere csv filer, og se salgstal."
 myLabel1 = Label(tab1, text=welcomeText).place(relx=0, rely=0, relheight=0.1, relwidth=1.0)
 Button(tab1, text='Importer Salgsrapport', command=import_sales_csv).place(relx=0.2, rely=0.1, relheight=0.2, relwidth=0.2)
 Button(tab1, text="Importer Abonnentstal", command=import_subscription_csv).place(relx=0.2, rely=0.3, relheight=0.2, relwidth=0.2)
-Button(tab1, text="Tryk her for at se salgstal",command=get_product_sales).place(relx=0.6, rely=0.1, relheight=0.2, relwidth=0.2)
+Button(tab1, text="Tryk her for at se salgstal", command=get_product_sales).place(
+    relx=0.6, rely=0.1, relheight=0.2, relwidth=0.2)
 
-    # Tab2 - Ingredienser
+# Tab2 - Ingredienser
 
-Button(tab2, text="Tilføj Ingrediens",command=add_ingredient).place(relx=0.1, rely=0.1, relheight=0.2, relwidth=0.2)
-sample = {"File Name":[f"file_{i}" for i in range(5)],
-          'Sheet Name': [f"sheet_{i}" for i in range(5)],
-          'Number Of Rows': [f"row_{i}" for i in range(5)],
-          'Number Of Columns': [f"col_{i}" for i in range(5)]
-          }
-df = pd.DataFrame(sample)
-cols = list(df.columns)
+Button(tab2, text="Tilføj Ingrediens", command=ingredient_window).place(relx=0.05, rely=0.05, relheight=0.1, relwidth=0.2)
+ingredientQuery = 'SELECT * FROM `ingredient` WHERE 1'
 
-tree = ttk.Treeview(tab2)
-tree.place(relx=0.0, rely=0.3, relheight=0.7, relwidth=1.0)
-tree["columns"] = cols
-for i in cols:
-    tree.column(i, anchor="w")
-    tree.heading(i, text=i, anchor='w')
+ingredientdf = DataFrame()
+def ingredientData():
+    global ingredientdf
+    ingredientdf = db.dataframe(ingredientQuery)
+    cols = list(ingredientdf.columns)
 
-for index, row in df.iterrows():
-    tree.insert("",0,text=index,values=list(row))
+    tree = ttk.Treeview(tab2)
+    tree.place(relx=0, rely=0.2, relheight=0.8, relwidth=1.0)
+    tree["columns"] = cols
+    for i in cols:
+        tree.column(i, anchor="w")
+        tree.heading(i, text=i, anchor='w')
+
+    for index, row in ingredientdf.iterrows():
+        tree.insert("",0,text=index,values=list(row))
+ingredientData()
+
+
+
+# Ingredient Window
+
+
+
+
+# scrollbar = ttk.Scrollbar(tree, orient=HORIZONTAL, command=tree.xview)
+# tree.configure(xscroll=scrollbar.set)
+# scrollbar.place(relx=0, rely=0.9, relheight=0.1, relwidth=1.0)
 
 root.mainloop()

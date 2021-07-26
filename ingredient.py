@@ -12,9 +12,9 @@ class Ingredient:
         self.protein = protein
 
     def pushToDatabase(self):
-
-        query = 'SELECT * FROM `ingredient` WHERE 1'
+        query = 'INSERT INTO `ingredient`(`name`, `price`, `kcal`, `fat`, `carbs`, `protein`) VALUES ("{}", {}, {}, {}, {}, {})'.format(self.name, self.price, self.kcal, self.fat, self.carbs, self.protein)
         print(query)
-        database = Database(query)
+        database = Database()
+        database.insert(query)
         print(database)
         return database

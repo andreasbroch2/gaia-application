@@ -99,8 +99,9 @@ def import_subscription_csv():
             cell = worksheet.find(row.Ret)
             time.sleep(1)
             worksheet.update_cell(cell.row, cell.col+4, row.Antal)
+            print(row.Ret)
         except gspread.exceptions.CellNotFound:  # or except gspread.CellNotFound:
-            print('Not found')
+            print('Not found - ' +row.Ret)
 
 
 def import_sales_csv():
@@ -108,6 +109,7 @@ def import_sales_csv():
     worksheet = sh.worksheet("Uge")
     csv_file_path = askopenfilename()
     df = pd.read_csv(csv_file_path)
+    df = df.replace('–', '-', regex=True)
     for index, row in df.iterrows():
         print(row[0])
         try:
